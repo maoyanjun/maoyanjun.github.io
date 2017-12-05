@@ -26,30 +26,25 @@ tags:
 本部分为生活中的随笔和旅行记录
 
 ### 学习记录
-
 学习部分，本人主要从事于CFD（Computational Fluid Dynamics）的相关研究和学习。学习过程中主要由对一下几个方面的知识进行学习和记录。
-
 1. CFD 基础理论
 2. OpenFOAM,Flunet
 3. SPH
 4. 海洋工程领域相关理论
-5. Linux 系统基础应用    
-
+5. Linux 系统基础应用
 ### 联系方式
-
-姓名：毛艳军   
-职业：硕士在读    
-学校：大连理工大学  
-所在地：大连 116024  
-邮箱：maoyanjun_dut@foxmail.com  
+* 姓名：毛艳军   
+* 职业：硕士在读    
+* 学校：大连理工大学  
+* 所在地：大连 116024  
+* 邮箱：maoyanjun_dut@foxmail.com
 
 欢迎交流学习！！！  
- 
-Name: **Mao Yanjun**  
-Occupation: **Master**  
-Organization: **Dalian University of Technology**  
-Address: **DA LIAN**  
-Email: **maoyanjun_dut@foxmail.com**  
+- Name: **Mao Yanjun**
+- Occupation: **Master**
+- Organization: **Dalian University of Technology**
+- Address: **DA LIAN**
+- Email: **maoyanjun_dut@foxmail.com**
 
 **Welcome to contact me by email !!!** 
 
