@@ -1,10 +1,10 @@
 ---
 layout:     post
-title:      Hello 2017
+title:      Hello World
 subtitle:    "\"Hello World, Hello Blog\""
 date:       2017-012-05
 author:     Mao Yanjun
-header-img: img/post-myj-2017.jpg
+header-img: img/post-bg-2017.jpg
 catalog: true
 tags:
     - 生活
