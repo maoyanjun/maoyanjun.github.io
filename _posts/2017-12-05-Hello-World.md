@@ -4,7 +4,7 @@ title:      Hello World
 subtitle:    "\"Hello World, Hello Blog\""
 date:       2017-12-05
 author:     Mao Yanjun
-header-img: img/post-bg-2015.jpg
+header-img: img/post-myj-2017.jpg
 catalog: true
 tags:
     - 生活
