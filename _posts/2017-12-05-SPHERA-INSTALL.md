@@ -33,7 +33,7 @@ SVN:```svn https://github.com/AndreaAmicarelliRSE/SPHERA.git```
 
 makefile如下，基本原理是定义几个环境变量，然后利用环境变量和通配符来进行批量的文件编译和链接。
 
-```# Variables to be updated
+``` # Variables to be updated
 VERSION = 8_0_AA
 #    bin, debug 用于存放可执行文件的位置，用opt模式的存于bin中，debug模式存放于debug文件下
 EXECUTION = bin
@@ -108,7 +108,7 @@ touch:
 clean:
        rm -f $(CODE).x
 #*************************************#
-```
+ ```
 
 此处强调一下，执行顺序
 * make touch
@@ -132,11 +132,11 @@ Clean 清除最终生成的可执行文件 CODE.x
 此问题出现原因是可执行文件SPHERA_v_7_2_gfortran_run.x 不能有空格，而此时，在定义 EXECUTION = run 时容易引入空格，导致文件名断裂SPHERA_v_7_2_gfortran  _run.x，从而出现以上错误。
 2. linker input file unused because linking not done
 此问题是因为make complie 出现了问题，
-```%.f90: %.o
+``` %.f90: %.o
          $(COMPILER) $@ -o $< $(OMP_FLAG) $(COMPILATION_FLAGS) –c
 ```
 标红部分，在7.2版本中存在写反的情况，导致编译出错。此时为什么出错，请自行学习，参考8.0版本，修改后即可成功编译
-```#%.f90: %.o
+``` #%.f90: %.o
 %.o: %.f90
        $(COMPILER) $< -o $@ $(OMP_FLAG) $(COMPILATION_FLAGS) –c
 ```
