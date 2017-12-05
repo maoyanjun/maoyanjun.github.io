@@ -22,13 +22,17 @@ tags:
 本文主要讲述如何在linux上编译安装SPHERA
 ## 代码获取：
 Git: ```git clone git@github.com:AndreaAmicarelliRSE/SPHERA.git```
+
 SVN:```svn https://github.com/AndreaAmicarelliRSE/SPHERA.git```
 
 注：下载链接经常失效，可自行到GitHub上搜索SPH，查看相关开源代码
+
 ## 编译安装
 编译的核心是使用Makefile文件进行文件的编译和安装，makefile文件如下，编译安装前，建议简单学习一下makefile文件的文件结构和使用方法，本程序是基于Fortran语言进行编写的，需要用到gfortran 或者ifort 编译器，当然，makefile的方法是在linux下通用的编译大型程序的方式。可用于C语言和C++语言等程序的编写。因此有必要学习一下。
 参考学习网站：[Makefile 学习](http://wiki.ubuntu.org.cn/跟我一起写Makefile:MakeFile介绍)
+
 makefile如下，基本原理是定义几个环境变量，然后利用环境变量和通配符来进行批量的文件编译和链接。
+
 ```# Variables to be updated
 VERSION = 8_0_AA
 #    bin, debug 用于存放可执行文件的位置，用opt模式的存于bin中，debug模式存放于debug文件下
@@ -105,6 +109,7 @@ clean:
        rm -f $(CODE).x
 #*************************************#
 ```
+
 此处强调一下，执行顺序
 * make touch
 * make
@@ -112,21 +117,29 @@ clean:
 * make 用于进行程序的编译和链接。
 
 Compile 将 make touch 创建的 *.o文件编译成 *.mod 模块文件
+
 Link 将相关模块 *.mod 进行与主函数的链接，形成可执行文件*.x
+
 Remove 清除相关中间文件
+
 Clean 清除最终生成的可执行文件 CODE.x
+
 注：可执行文件在linux下后缀名没有太大意义，此处定义为 *.x
+
 **编译过程出现的问题**：
+
 1. file not recognized: File truncated
 此问题出现原因是可执行文件SPHERA_v_7_2_gfortran_run.x 不能有空格，而此时，在定义 EXECUTION = run 时容易引入空格，导致文件名断裂SPHERA_v_7_2_gfortran  _run.x，从而出现以上错误。
 2. linker input file unused because linking not done
 此问题是因为make complie 出现了问题，
-%.f90: %.o
+```%.f90: %.o
          $(COMPILER) $@ -o $< $(OMP_FLAG) $(COMPILATION_FLAGS) –c
+```
 标红部分，在7.2版本中存在写反的情况，导致编译出错。此时为什么出错，请自行学习，参考8.0版本，修改后即可成功编译
-#%.f90: %.o
+```#%.f90: %.o
 %.o: %.f90
        $(COMPILER) $< -o $@ $(OMP_FLAG) $(COMPILATION_FLAGS) –c
+```
 3. 经过尝试，8.0版本可以顺利运行，但是所带的input 算例中在*.inp deck 读取的时候， RGBColor 处出错，可能是版本兼容问题。也可能是程序编译过程存在问题。
 经尝试7.2版本可以正常运行，计算结果。
 最后，已经编译好的可执行文件8.0和7.2版本的代码可以从下面获取：
@@ -134,15 +147,18 @@ Clean 清除最终生成的可执行文件 CODE.x
        
 ### 算例运行
 算例目录下需要有一下三个文件
-├── dam_break_2D_demo.inp #基本参数输入文件
-├── SPHERA_v_8_0_AA_gfortran_bin.x #可执行文件
-└── surface_mesh_list.inp #相关定义文件，默认存在，无需更改
+- dam_break_2D_demo.inp #基本参数输入文件
+- SPHERA_v_8_0_AA_gfortran_bin.x #可执行文件
+- surface_mesh_list.inp #相关定义文件，默认存在，无需更改
+
 在算例目录下输入：
 ```./ SPHERA_v_8_0_AA_gfortran_bin.x dam_break_2D_demo```
+
 注意：是dam_break_2D_demo，不带后缀。
  
 ### 后处理
 后处理采用paraview 或者tecplot。 注意应同时导入 *.vtk 和*.vtu 文件，其中vtk文件只包含算例几何文件，vtu文件是相关计算结果
+
 ![paraview postprocess](https://i.imgur.com/5YfZt05.jpg)
 
 
