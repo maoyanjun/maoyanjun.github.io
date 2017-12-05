@@ -2,7 +2,7 @@
 layout:     post
 title:      Hello World
 subtitle:    "\"Hello World, Hello Blog\""
-date:       2017-012-05
+date:       2017-12-05
 author:     Mao Yanjun
 header-img: img/post-bg-2017.jpg
 catalog: true
