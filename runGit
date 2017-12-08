@@ -1,0 +1,11 @@
+#!/bin/bash
+echo Hello world
+git add .
+echo "give you commit to change,detail commite is useful"
+read commit
+git commit -m "$commit"
+echo "begin to push to github"
+git push origin master
+echo "begin to push to coding"
+git push coding master:coding-pages
+
