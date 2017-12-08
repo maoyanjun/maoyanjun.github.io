@@ -1,9 +1,23 @@
 #!/bin/bash
-echo Hello world
-
+echo Hello world: 
+date
+echo            
+#git status
+git status
+echo "if no change please input Y,else input N"
+read abool
+if [abool=Y]
+then
+	echo "no change to add so shell break out"
+	exit
+else
+	echo "begin to add changes"
+fi
 # git add to the repository
 git add .
 
+#git status
+git status
 #git commit
 echo "                 "
 echo "give you commit to change,detail commite is useful: your commit is :"
