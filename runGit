@@ -1,11 +1,18 @@
 #!/bin/bash
 echo Hello world
+
+# git add to the repository
 git add .
-echo "give you commit to change,detail commite is useful"
+
+#git commit
+echo "                 "
+echo "give you commit to change,detail commite is useful: your commit is :"
 read commit
 git commit -m "$commit"
+
+#git push to the remote branch
 echo "begin to push to github"
 git push origin master
 echo "begin to push to coding"
 git push coding master:coding-pages
-
+echo
