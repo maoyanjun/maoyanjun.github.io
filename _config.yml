@@ -51,7 +51,7 @@ markdown: kramdown
 highlighter: rouge
 kramdown:
   input: GFM                            # use Github Flavored Markdown !important
-
+	syntax_highlighter: rouge
 
 
 # 评论系统
