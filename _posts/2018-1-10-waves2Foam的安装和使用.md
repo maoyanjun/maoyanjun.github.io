@@ -26,7 +26,104 @@ tags:
 # waves2Foam的安装与使用
 关于wavesFoam的安装与使用，[http://http://openfoamwiki.net/index.php/Contrib/waves2Foam](http://http://openfoamwiki.net/index.php/Contrib/waves2Foam "openfoamwiki"),上面已经做了详细的介绍，其中主要内容都迁移到了wave2Foam Manual 上去了。因此对于使用waves2Foam的人员，建议通读manualwaves2Foam.pdf。其中安装部分已经把基本安装流程和所需要的依赖都说明白了，先移步去尝试尝试可好？这里主要是点出安装过程中对于新手常遇到的几个小坑。
 # 支持版本
-手册中已经写明了支持的版本，亲测2.x ,3.x系列几乎安装没有太大问题，目前阶段OF1706版本暂时编译不了。
+手册中已经写明了支持的版本，亲测2.x ,3.x系列几乎安装没有太大问题，~~目前阶段OF1706版本暂时编译不了~~。
+
+4/19/2018 10:47:35 AM 
+
+waves2Foam 近期公布了其支持的OF17012_PLUS版本，博主之前尝试了N久的在OF1706_PLUS上编译安装的工作也算告一段落，在此填坑，是否能够和重叠网格有效结合有待于进一步验证，应该问题不大。
+由于暂时不会将OF1706_PLUS直接升级为1712，因此强迫症的我打算再次尝试OF1706_PLUS上编译安装。``application/solvers/``里面没有对应1706_PLUS的版本。因此从1712_PLUS版拷贝，从1606拷贝的兼容性极差，似乎版本差异太大，缺失很多声明文件。
+
+```
+cp -r solver1712_PLUS/ solver1706_PLUS/
+```
+
+设置好其他，编译发现如下错误：
+
+```
+1706/src/OSspecific/POSIX/lnInclude   -fPIC -c porousWaveFoam.C -o Make/linux64GccDPInt64Opt/porousWaveFoam.o
+In file included from alphaEqnSubCycle.H:30:0,
+                 from porousWaveFoam.C:116:
+alphaEqn.H: In function ‘int main(int, char**)’:
+alphaEqn.H:79:9: error: ‘scAlpha’ was not declared in this scope
+     if (scAlpha > 0)
+         ^
+In file included from alphaEqnSubCycle.H:38:0,
+                 from porousWaveFoam.C:116:
+alphaEqn.H:79:9: error: ‘scAlpha’ was not declared in this scope
+     if (scAlpha > 0)
+         ^
+In file included from porousWaveFoam.C:127:0:
+UEqn.H:29:27: warning: unused variable ‘mu’ [-Wunused-variable]
+     const volScalarField& mu = tmu();
+                           ^
+/home/shzx/OpenFOAM/OpenFOAM-v1706/wmake/rules/General/transform:28: recipe for target 'Make/linux64GccDPInt64Opt/porousWaveFoam.o' failed
+
+```
+
+显示为scAlpha未声明，查看此变量未找到相关声明，参考查找``icAlpha``关键字，在``OpenFOAM-v1706/src/finiteVolume/cfdTools/general/include/alphaControls$``中发现此变量，如下：
+
+```
+const dictionary& alphaControls = mesh.solverDict(alpha1.name());
+
+label nAlphaCorr(readLabel(alphaControls.lookup("nAlphaCorr")));
+
+label nAlphaSubCycles(readLabel(alphaControls.lookup("nAlphaSubCycles")));
+
+bool MULESCorr(alphaControls.lookupOrDefault<Switch>("MULESCorr", false));
+
+// Apply the compression correction from the previous iteration
+// Improves efficiency for steady-simulations but can only be applied
+// once the alpha field is reasonably steady, i.e. fully developed
+bool alphaApplyPrevCorr
+(
+    alphaControls.lookupOrDefault<Switch>("alphaApplyPrevCorr", false)
+);
+
+// Isotropic compression coefficient
+scalar icAlpha
+(
+    alphaControls.lookupOrDefault<scalar>("icAlpha", 0)
+);
+
+```
+
+对比1712代码，发现了如下关键字声明：
+
+```
+// Isotropic compression coefficient
+scalar icAlpha
+(
+    alphaControls.lookupOrDefault<scalar>("icAlpha", 0)
+);
+
+// Shear compression coefficient
+scalar scAlpha
+(
+    alphaControls.lookupOrDefault<scalar>("scAlpha", 0)
+);
+
+```
+
+因不方便改动源码，因此将此声明放到了alphaEqn.H中，尝试可以编译成功，至此此坑填满。撒花
+
+如下：
+
+```
+// Shear compression coefficient
+ scalar scAlpha
+ (
+     alphaControls.lookupOrDefault<scalar>("scAlpha", 0)
+     );
+    // Add the optional shear compression contribution
+    if (scAlpha > 0)
+    {
+        phic +=
+            scAlpha*mag(mesh.delta() & fvc::interpolate(symm(fvc::grad(U))));
+    }
+
+```
+
+
 
 # 相关依赖
 一定要把manualwaves2Foam中的相关依赖都下载和编译安装好之后再进行waves2Foam的安装。依赖的相关安装方法自行百度。这里面有个很容易出的问题，就是ThirdParrty里面，关于OceanWave3D-Fortran90的下载，与安装时采用的git clone.
@@ -498,6 +595,17 @@ export WAVES_POST=$WAVES_UTIL/postProcessing
 
 **补充：使用默认的路径编译好可执行文件后，后续如果自己改动求解器编译时路径尽量不要使用waves2Foam提供了的环境变量，最好使用绝对路径，虽然麻烦了一些但是不会出现太多的环境变量问题，或者如上文所述，记得将其添加到自己的配置文件中，每次开启终端即可自动source .bashrc的话也可以**
 
+4/20/2018 9:04:45 PM 
+
+**经过再次编译安装前一定要到/bin/里面``source bashrc``,记得设置waves2Foam的环境变量，否则你会得到各种错误,如缺少很多include文件：以及如下问题：**
+
+```
+mkdir: cannot create directory ‘’: No such file or directory
+/home/shzx/OpenFOAM/OpenFOAM-v1706/wmake/makefiles/general:140: recipe for target '/waveDyMFoam' failed
+make: *** [/waveDyMFoam] Error 1
+
+```
+
 # 算例运行
 
 默认算例可以通过运行Allrun命令来运行算例，此处可以通过阅读Allrun来了解waves2Foam算例运行过程中的执行的命令，可以手动按顺序执行。此处一个小坑，算例换到其他位置后无法运行Allrun。请看代码注释部分
@@ -571,8 +679,8 @@ EXE_INC = \
     -I$(LIB_SRC)/fvOptions/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
     -I$(LIB_SRC)/sampling/lnInclude \
-    -DOFVERSION=240 \
-    -DEXTBRANCH=0 \
+    -DOFVERSION=240 \ #对应版本号
+    -DEXTBRANCH=0 \ #正常版本设为0 extend 版本设为1
     -DXVERSION=$(WAVES_XVERSION) \
     -DOFPLUSBRANCH=0 \
     -I$(WAVES_SRC)/waves2Foam/lnInclude \
@@ -595,6 +703,202 @@ EXE_LIBS = \
     -lgsl \
     -lgslcblas
 ```
+
+4/20/2018 9:09:58 PM 新增waveDyMFoam.C的改写方式
+
+由于waves2Foam中未对动网格求解器进行编写，此部分在manual中给出了部分解释，但是相对较难理解。manual中的compareFiles.sh后显示的内容如下，这里面主要是对比了所有的interFoam和waveFoam的区别，作为参考用于waveDyMFOAM的改写：
+
+```
+============ BEGIN: alphaCourantNo.H ============
+diff: /home/shzx/OpenFOAM/OpenFOAM-v1706/applications/solvers/multiphase/interFoam/alphaCourantNo.H: No such file or
+ directory
+
+============= END: alphaCourantNo.H =============
+
+============ BEGIN: alphaEqn.H ============
+diff: /home/shzx/OpenFOAM/OpenFOAM-v1706/applications/solvers/multiphase/interFoam/alphaEqn.H: No such file or direc
+tory
+
+============= END: alphaEqn.H =============
+
+============ BEGIN: alphaEqnSubCycle.H ============
+diff: /home/shzx/OpenFOAM/OpenFOAM-v1706/applications/solvers/multiphase/interFoam/alphaEqnSubCycle.H: No such file
+or directory
+
+============= END: alphaEqnSubCycle.H =============
+
+============ BEGIN: alphaSuSp.H ============
+
+============= END: alphaSuSp.H =============
+
+============ BEGIN: correctPhi.H ============
+
+============= END: correctPhi.H =============
+
+============ BEGIN: createAlphaFluxes.H ============                                                        [70/276]
+diff: /home/shzx/OpenFOAM/OpenFOAM-v1706/applications/solvers/multiphase/interFoam/createAlphaFluxes.H: No such file
+ or directory
+
+============= END: createAlphaFluxes.H =============
+
+============ BEGIN: createFields.H ============
+84,86d83
+< //volScalarField gh("gh", g & (mesh.C() - referencePoint));
+< //surfaceScalarField ghf("ghf", g & (mesh.Cf() - referencePoint));
+<
+143,144d139
+<
+< relaxationZone relaxing(mesh, U, alpha1);
+
+============= END: createFields.H =============
+
+============ BEGIN: pEqn.H ============
+
+============= END: pEqn.H =============
+
+============ BEGIN: rhofs.H ============
+
+============= END: rhofs.H =============
+
+============ BEGIN: setDeltaT.H ============
+diff: /home/shzx/OpenFOAM/OpenFOAM-v1706/applications/solvers/multiphase/interFoam/setDeltaT.H: No such file or dire
+ctory
+
+============= END: setDeltaT.H =============
+============ BEGIN: setRDeltaT.H ============
+diff: /home/shzx/OpenFOAM/OpenFOAM-v1706/applications/solvers/multiphase/interFoam/setRDeltaT.H: No such file or dir
+ectory
+
+============= END: setRDeltaT.H =============
+
+============ BEGIN: UEqn.H ============
+
+============= END: UEqn.H =============
+
+============ BEGIN: waveFoam.C ============
+56,58d55
+< #include "relaxationZone.H"
+< #include "externalWaveForcing.H"
+<
+62a60
+>     #include "postProcess.H"
+67d64
+<
+71,75d67
+<
+<     #include "readGravitationalAcceleration.H"
+<     #include "readWaveProperties.H"
+<     #include "createExternalWaveForcing.H"
+<
+80d71
+<     #include "postProcess.H"
+84,87c75,80
+<     #include "readTimeControls.H"
+<     #include "CourantNo.H"
+<     #include "setInitialDeltaT.H"
+<
+---                                                                                                          [7/276]
+>     if (!LTS)
+>     {
+>         #include "readTimeControls.H"
+>         #include "CourantNo.H"
+>         #include "setInitialDeltaT.H"
+>     }
+97,99c90,99
+<         #include "CourantNo.H"
+<         #include "alphaCourantNo.H"
+<         #include "setDeltaT.H"
+---
+>         if (LTS)
+>         {
+>             #include "setRDeltaT.H"
+>         }
+>         else
+>         {
+>             #include "CourantNo.H"
+>             #include "alphaCourantNo.H"
+>             #include "setDeltaT.H"
+>         }
+105,106d104
+<         externalWave->step();
+<
+113,114d110
+<             relaxing.correct();
+<
+142,144d137
+<
+<     // Close down the external wave forcing in a nice manner
+<     externalWave->close();
+============= END: waveFoam.C =============
+
+
+```
+
+* 首先做最简单的工作,复制interDyMFoam/ 到waveDyMFoam/ 参见上文
+* 修改file 和option 文件 参见上文
+* 代码改写，给出了局部添加代码行号和上下文位置：
+waveDyMFoam.C
+
+```
+ 52 #include "relaxationZone.H"
+ 53 #include "externalWaveForcing.H"
+
+ 67     #include "createDyMControls.H"
+ 68
+ 69     #include "createFields.H"  //此部分对代码顺序做了一定的调整，下面三个注释的文件放在了creatFields.H中，因为初始化P=p_rgh+rho*gh，需要调用，因此需要调整顺序，此部分大多数版本的改写中都会遇到此问题。manual中给出的解决方式没理解，似乎即使编译成功也会出现无法运行的问题，在此修改，可以编译成功，但是暂未进行算例验证。
+ 70 //    #include "readGravitationalAcceleration.H"
+ 71 //    #include "readhRef.H"
+ 72 //    #include "gh.H"
+ 73     #include "readWaveProperties.H"
+ 74     #include "createExternalWaveForcing.H"
+
+124     ┆   Info<< "Time = " << runTime.timeName() << nl << endl;
+125                 ┆
+126                 ┆externalWave->step();
+127                 ┆
+128     ┆   // --- Pressure-velocity PIMPLE corrector loop
+
+145     ┆   ┆   ┆   ┆   if (mesh.topoChanging())
+146     ┆   ┆   ┆   ┆   {
+147     ┆   ┆   ┆   ┆   ┆   talphaPhi1Corr0.clear(); //因为此solver/waveFoam/是从v-1712版本复制而来，导致createAlphaFluxes.H的下面定义，与从1706版本复制的interDyMFoam/中兼容，因此需要修改，原代码：talphaPhiCorr0.clear();
+148     ┆   ┆   ┆   ┆   }
+
+176     ┆   ┆   #include "alphaControls.H"
+177     ┆   ┆   #include "alphaEqnSubCycle.H"
+178
+179             relaxing.correct();
+180     ┆   ┆   mixture.correct();
+
+202    // Close down the external wave forcing in a nice manner
+203     externalWave->close();
+204
+205     Info<< "End\n" << endl;
+
+```
+
+creatFiels.H
+```
+ 78 );
+ 79
+ 80
+ 81 #include "readGravitationalAcceleration.H"
+ 82 #include "readhRef.H"
+ 83 #include "gh.H"
+ 84 //volScalarField gh("gh", g & (mesh.C() - referencePoint));//观察发现此部分似乎多余，在gh文件中似乎已经定义，因此comment out
+ 85 //surfaceScalarField ghf("ghf", g & (mesh.Cf() - referencePoint));//针对于参考压力和参考重力高度的内容有待于进一步的了解
+ 86
+ 87
+
+```
+
+createAlphaFluxes.H的定义如下：
+```
+ 20 // MULES Correction
+ 21 tmp<surfaceScalarField> talphaPhi1Corr0;
+
+```
+
+总结，此次编译工作纯属自娱自乐，程序调整较大，个别地方有待于进一步验证。 但也对整个程序有了更进一步的认识，下一步工作将其应用于重叠网格模型overInterFoam和isoInterFoam的新型自由液面的压缩格式上。
 
 # 杂项
 对于新手，经常会遇到的``命令不存在``的错误提示，思考了一下，大概有一下几种可能参考：
