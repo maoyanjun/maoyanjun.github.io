@@ -370,7 +370,7 @@ It miss the declaration of the ``cellMask`` and the ``InterpolatedCells``  which
 
 ```
 
-But more serious problems occur as shown below, terrible confusion:  the main error type is ``undefined reference to Foam::cellCellStencilObject::typeName`` for missing some libs or disorder the libs. As for this question, It should because there are some difference in the ``UEqn.H`` and ``pEqn.H`` between both solver code.   Further explanation, for the ``multiphaseInterDyMFoam.C``, it links the ``UEqn.H`` and ``pEqn.H`` from ``../../interFoam/``, but for ``../../interFoam/overInterDyMFoam/`` it has specifial ``UEqn.H`` and ``pEqn.H`` for the overset lib. The reader can check the difference of ``UEqn.H`` and ``pEqn.H``in between ``../../interFoam/`` and  ``../../interFoam/overInterDyMFoam/``. So maybe these differences are the troublemakers. you can fellow this path to finish the modification,cp the ``UEqn.H`` and ``pEqn.H`` from ``../../interFoam/overInterDyMFoam/`` to ``../overmultiphasInterDyMFoam/``. I think this problem maybe be solved or may have further errors. The Author just stop at here and chose another way which maybe sounds easy, actually more complicated. We just take a detour to the destination. Please keeping reading.
+But more serious problems occur as shown below, terrible confusion:  the main error type is ``undefined reference to Foam::cellCellStencilObject::typeName`` for missing some libs or disorder the libs. As for this question, It should because there are some difference in the ``UEqn.H`` and ``pEqn.H`` between both solver codes.  Further explanation, for the ``multiphaseInterDyMFoam.C``, it links the ``UEqn.H`` and ``pEqn.H`` from ``../../interFoam/``, but for ``../../interFoam/overInterDyMFoam/`` it has specifial ``UEqn.H`` and ``pEqn.H`` for the overset lib. The reader can check the difference of ``UEqn.H`` and ``pEqn.H``in between ``../../interFoam/`` and  ``../../interFoam/overInterDyMFoam/``. So maybe these differences are the troublemakers. you can fellow this path to finish the modification,cp the ``UEqn.H`` and ``pEqn.H`` from ``../../interFoam/overInterDyMFoam/`` to ``../overmultiphasInterDyMFoam/``. I think this problem maybe be solved or may have further errors. The author just stop here and chose another way which maybe sounds easy, actually more complicated. We just take a detour to the destination. Please keeping reading.
 
 ```
 g++ -std=c++11 -m64 -DOPENFOAM_PLUS=1706 -Dlinux64 -DWM_ARCH_OPTION=64 -DWM_DP -DWM_LABEL_SIZE=64 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -O3  -DNoRepository -ftemplate-depth-100 -I . -I.. -I../../VoF -I../../interFoam/interDyMFoam -I../../interFoam -I../multiphaseMixture/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/transportModels -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/transportModels/incompressible/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/transportModels/interfaceProperties/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/TurbulenceModels/turbulenceModels/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/TurbulenceModels/incompressible/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/dynamicMesh/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/dynamicFvMesh/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/finiteVolume/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/overset/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/meshTools/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/sampling/lnInclude -IlnInclude -I. -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/OpenFOAM/lnInclude -I/home/shzx/OpenFOAM/OpenFOAM-v1706/src/OSspecific/POSIX/lnInclude   -fPIC -Xlinker --add-needed -Xlinker --no-as-needed /home/shzx/OpenFOAM/OpenFOAM-v1706/build/linux64GccDPInt64Opt/applications/solvers/multiphase/multiphaseInterFoam/OvermultiphaseInterDyMFoam/OvermultiphaseInterDyMFoam.o -L/home/shzx/OpenFOAM/OpenFOAM-v1706/platforms/linux64GccDPInt64Opt/lib \
@@ -416,12 +416,14 @@ make: *** [/home/shzx/OpenFOAM/shzx-v1706/platforms/linux64GccDPInt64Opt/bin/ove
 this path starts from the ``overInterDyMFoam``, and turn it into the ``overMultiphaseInterDyMFoam``.it seems more difficult to do there work. but I success to compile it.the multiphase model is more easy to change under the frame of interDyMFoam.C
 What I have done are listed below:
 1. modify the option and files in Make/
+
 ```
 cp -r overInterDyMFoam/ overMultiphaseInterDyMFoam/
 cd overMultiphaseInterDyMFoam/
 mv overInterDyMFoam.C OvermultiphaseInterDyMFoam.C
 
 ```
+
 ### Modification of options and files
 Compare the Make/option from multiphaseInterDyMFoam/ and overInterDyMFoam/, delete the linking files and compiled libs for twophase model, add the link file and compiled libs necessary for multiphase model. Both files are shown as below. the readers can compare them and check what modifications have been done.
 
@@ -854,6 +856,7 @@ mesh.setFluxRequired(p_rgh.name());
 #include "createMRF.H"
 
 ```
+
 ### cp multiphaseMixture to the ../interFoam/
 
 Finally for easy searching the multiphaseMixture model, I just copy it from the ``../multiphaseInterFoam/`` to ``../interFoam/``
@@ -867,6 +870,7 @@ then, it will be successful to compile the OvermultiphaseInterDyMFoam.
 ```
 wmake
 ```
+
 ### success 
 
 After that, I am sure that I take a detour to finish this work. maybe in the first part, we almost get to the destination. but I do not have time to take a try. if you are working on it. just try it like  what I do in the first part.
@@ -875,6 +879,7 @@ After that, I am sure that I take a detour to finish this work. maybe in the fir
 
 * Though It was compiled successfully, I have not done verfication of this solver. I do not know whether it works well or not. Hope feedbacks about it from the readers. 
 * if you think this post help you with your research work, hope you can reference it as fellow format, if you want the total Codes, you can contact me with the Email. I will also upload  the codes to my github repository.[https://github.com/maoyanjun](https://github.com/maoyanjun)
+
 
 ```
 @misc{OvermultiphaseInterDyMFoam-Yanjun Mao,
@@ -885,7 +890,8 @@ After that, I am sure that I take a detour to finish this work. maybe in the fir
   note = "[Online; accessed 04-May-2018]"
 }
 ```
-> **Furether questions or suggestions can be leaved on the below comment zone or connect me by the Email. The Email address is in the ABOUT zone. the post is originally writen by Mao yanjun, If you want to reprint, please mark the reference. **
+
+> **Furether questions or suggestions can be leaved on the below comment zone or connect me by the Email. The Email address is in the ABOUT zone. the post is originally writen by Mao yanjun, If you want to reprint, please mark the reference.**
 
 
 
