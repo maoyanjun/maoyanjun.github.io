@@ -4,7 +4,7 @@ title:      The Manipulation of OvermultiphaseInterDyMFoam
 subtitle:    
 date:       2018-5-4
 author:     Mao Yanjun
-header-img: img/post-myj-waves2Foam.png
+header-img: img/post-myj-multiphaseFlow.jpg
 catalog: true
 tags:
     - Linux
