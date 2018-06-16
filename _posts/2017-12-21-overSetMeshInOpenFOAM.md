@@ -39,6 +39,7 @@ runApplication subsetMesh -overwrite c0 -patch floatingObject #对c0域添加边
 
 # ----------------------------------------------------------------- end-of-file
 Allrun.pre IN background
+
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 . $WM_PROJECT_DIR/bin/tools/RunFunctions
@@ -47,7 +48,7 @@ cd ${0%/*} || exit 1    # Run from this directory
 runApplication blockMesh
 
 # Add the cylinder mesh
-runApplication mergeMeshes . ../floatingBody –overwrite #关节的一步是将floatingBody的网格融合进了背景网格中。
+runApplication mergeMeshes . ../floatingBody –overwrite #关节的一步是将floatingBody的网格融合进了背景网格中。此处需要注意一个问题，overset mesh 和 background mesh 的坐标范围一定要统一，这样才可以重叠在一起。因此两套网格的坐标点设置统一很重要。
 
 # Select cellSets for the different zones
 runApplication topoSet #下面详述：对计算域Cell进行了定义,便于更新域和setFields.
@@ -64,7 +65,11 @@ runApplication decomposePar
 
 # TopoSetDict 的使用和介绍
 
-TopoSetDict:是在floatingBody中 由blockMesh定义的side region内进行设置，首先设置了c0为floatingobject边界内一点，则创建了新的cell zone 为c0.又以c0为基础创建了C1，再通过反选c0 zone的c1 cell zone.即floatingoject和side之间的区域。
+5/11/2018 10:20:47 AM 添加background中的topoSetDictZone的解释,承接下面的setField：
+
+之前，忽略了这个文件，于是倒了大霉，搞了整整一天，终于找到了问题所在。
+
+TopoSetDictZone:是在background中 由blockMesh定义的side region内进行设置，首先设置了c0为floatingobject边界内一点，则创建了新的cell zone 为c0.又以c0为基础创建了C1，再通过反选c0 zone的c1 cell zone.即floatingoject和side之间的区域。 此处，mergemesh之后，操作都在background网格上，此处标记的是background mesh 还是floatingObject mesh 有待于进一步确定
 ![重叠网格示意图](https://i.imgur.com/iLUZM7I.png)
 
 图中的overset Boundary 既是OF中定义的side,wall boundaries 则是floatingObject 边界。反选后的C1则是重叠区域
@@ -88,7 +93,7 @@ actions
         source  regionToCell;
         sourceInfo
         {
-            insidePoints ((12.0 0.05 1.0));
+            insidePoints ((12.0 0.05 1.0));//此处该点一定要设置在扣出浮体的内部，会自动寻找边界定义C0 cellzone，否则会出现重叠网格和背景网格直接的不耦合现象。
         }
     }
 
@@ -114,8 +119,11 @@ actions
 
 ```
 
+
+
 # setField 对流体域进行定义
 
+上述的在background中的topoSetDictZone 已经设置了 C0 和C1区域，下面通过setField设置标记。
 然后通过setField进行alphawater的设置和zoneID的设置。其中c0 zone 被定义为0，此区域不参加插值求解。被冻结？？。C1 zone 设置为1，即为参与插值求解的区域。此部分网格会随着sixdof进行网格的运动。同时通过此区域进行双向插值计算。（以上内容，纯属个人猜测总结，理论基础不深，后期会修正）
 
 ```
@@ -171,6 +179,58 @@ regions
 // ************************************************************************* //
 
 ```
+**6/4/2018 7:45:56 PM 添加 关于重叠网格中边界的说明**
+#  重叠网格边界中的特殊边界
+
+重叠网格的边界定义自然是很重要，有这样几个边界很重要
+
+	```
+	    sides
+	    {
+	        type            overset;
+	        inGroups        1(overset);
+	        nFaces          300;
+	        startFace       227915;
+	    }
+	
+	```
+
+此边界是定义在 floatingObject 中，最后merge到 background 网格上，是进行重叠域标记和信息传递的重要边界条件，具体实现待补充。
+---
+
+```
+    sides2
+    {
+        type            empty;
+        inGroups        1(empty);
+        nFaces          9032;
+        startFace       228215;
+    }
+
+```
+此边界条件是 floatingObject中的前后面，在 更改为2D算例的时候，可以设置为 empty，当为3D算例时，也应该设置为``overset``。
+---
+
+```
+    oversetPatch
+    {
+        type            overset;
+        inGroups        1(overset);
+        nFaces          0;
+        startFace       116951;
+    }
+    atmosphere
+    {
+        type            patch;
+        inGroups        1(patch);
+        nFaces          713;
+        startFace       116951;
+    }
+
+```
+一个特殊的边界，做什么用的暂时不知道，边界面设置为0个。startFace 为整个边界编号中的起始编号。如上面所示参照atmosphere边界。如果没有此边界，log 文件中会出现 warning 大概是 oversetPatch 不是计算域中的第一个起始编号。
+---
+
 **最后关于topoSet, sefFieldsDict, refinemesh,等网格和前处理工具，可在代码中application/utilities/中看到详细的Dict设置指导。以及实现的源代码。**
 
 

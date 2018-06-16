@@ -595,7 +595,7 @@ export WAVES_POST=$WAVES_UTIL/postProcessing
 
 **补充：使用默认的路径编译好可执行文件后，后续如果自己改动求解器编译时路径尽量不要使用waves2Foam提供了的环境变量，最好使用绝对路径，虽然麻烦了一些但是不会出现太多的环境变量问题，或者如上文所述，记得将其添加到自己的配置文件中，每次开启终端即可自动source .bashrc的话也可以**
 
-4/20/2018 9:04:45 PM 
+**4/20/2018 9:04:45 PM **
 
 **经过再次编译安装前一定要到/bin/里面``source bashrc``,记得设置waves2Foam的环境变量，否则你会得到各种错误,如缺少很多include文件：以及如下问题：**
 
@@ -704,7 +704,7 @@ EXE_LIBS = \
     -lgslcblas
 ```
 
-4/20/2018 9:09:58 PM 新增waveDyMFoam.C的改写方式
+**4/20/2018 9:09:58 PM 新增waveDyMFoam.C的改写方式**
 
 由于waves2Foam中未对动网格求解器进行编写，此部分在manual中给出了部分解释，但是相对较难理解。manual中的compareFiles.sh后显示的内容如下，这里面主要是对比了所有的interFoam和waveFoam的区别，作为参考用于waveDyMFOAM的改写：
 
@@ -837,6 +837,9 @@ ectory
 * 首先做最简单的工作,复制interDyMFoam/ 到waveDyMFoam/ 参见上文
 * 修改file 和option 文件 参见上文
 * 代码改写，给出了局部添加代码行号和上下文位置：
+
+**6/4/2018 6:56:47 PM  修正waveDyMFoam.C 的改写代码**
+
 waveDyMFoam.C
 
 ```
@@ -844,12 +847,14 @@ waveDyMFoam.C
  53 #include "externalWaveForcing.H"
 
  67     #include "createDyMControls.H"
- 68
- 69     #include "createFields.H"  //此部分对代码顺序做了一定的调整，下面三个注释的文件放在了creatFields.H中，因为初始化P=p_rgh+rho*gh，需要调用，因此需要调整顺序，此部分大多数版本的改写中都会遇到此问题。manual中给出的解决方式没理解，似乎即使编译成功也会出现无法运行的问题，在此修改，可以编译成功，但是暂未进行算例验证。
+ 68 
+       //此部分关于调整creatFields.H与readWaveProperties.H 的方法是错误的，编译不会出错，但是在运行是，当注册 U 速度场时需要读取 ``waveProperties`` Dict, 此时readWaveProperties.H 还没有注册，
+      //因此会导致没有 waveProperties Dict 的支持。因此需要在 U 注册之前，进行 #include "readWaveProperties.H",且 readWaveProperties.H 需要readGravitationalAcceleration.H 中声明 g.因此争取修改方法如修改后所示代码，将#include "readWaveProperties.H" 也放入到creatFields.H中。
+ 69    ~~ #include "createFields.H"  //此部分对代码顺序做了一定的调整，下面三个注释的文件放在了creatFields.H中，因为初始化P=p_rgh+rho*gh，需要调用，因此需要调整顺序，此部分大多数版本的改写中都会遇到此问题。manual中给出的解决方式没理解，似乎即使编译成功也会出现无法运行的问题，在此修改，可以编译成功，但是暂未进行算例验证。
  70 //    #include "readGravitationalAcceleration.H"
  71 //    #include "readhRef.H"
  72 //    #include "gh.H"
- 73     #include "readWaveProperties.H"
+ 73 //    #include "readWaveProperties.H"~~
  74     #include "createExternalWaveForcing.H"
 
 124     ┆   Info<< "Time = " << runTime.timeName() << nl << endl;
@@ -878,18 +883,33 @@ waveDyMFoam.C
 
 creatFiels.H
 ```
- 78 );
- 79
- 80
- 81 #include "readGravitationalAcceleration.H"
- 82 #include "readhRef.H"
- 83 #include "gh.H"
+  1 #include "createRDeltaT.H"
+  2 #include "readGravitationalAcceleration.H"
+  3 #include "readWaveProperties.H"
+  4 #include "readhRef.H"
+  5 #include "gh.H"
+  6 Info<< "Reading field p_rgh\n" << endl;
+	volScalarField p_rgh
+	(
+	    IOobject
+	    (
+	        "p_rgh",
+	        runTime.timeName(),
+	        mesh,
+	        IOobject::MUST_READ,
+	        IOobject::AUTO_WRITE
+	    ),
+	    mesh
+	);
+
+
  84 //volScalarField gh("gh", g & (mesh.C() - referencePoint));//观察发现此部分似乎多余，在gh文件中似乎已经定义，因此comment out
  85 //surfaceScalarField ghf("ghf", g & (mesh.Cf() - referencePoint));//针对于参考压力和参考重力高度的内容有待于进一步的了解
  86
  87
 
 ```
+
 
 createAlphaFluxes.H的定义如下：
 ```
@@ -898,7 +918,22 @@ createAlphaFluxes.H的定义如下：
 
 ```
 
-总结，此次编译工作纯属自娱自乐，程序调整较大，个别地方有待于进一步验证。 但也对整个程序有了更进一步的认识，下一步工作将其应用于重叠网格模型overInterFoam和isoInterFoam的新型自由液面的压缩格式上。
+总结，此次编译工作纯属自娱自乐，程序调整较大，~~个别地方有待于进一步验证~~，经过以上修改，验证后可以正确的将waves2Foam的造波条件应用于interDyMFoam 求解器。 对整个程序有了更进一步的认识，下一步工作将其应用于重叠网格模型overInterFoam和isoInterFoam的新型自由液面的压缩格式上。
+
+# overWaveDyMFoam solver
+
+相信此部分内容应该属于全网首发，其实没什么新鲜东西，一句话，搞清楚什么是造波边界条件，什么是动网格求解器，两者算法上应该是相互独立的，因此上面 waveDyMFoam solver 的修改流程完全适用于 overWaveDyMFoam solver, 此部分工作已经过验证可以正确应用，需要注意的是相关依赖和include 文件要搞清楚，作者建议 overWaveDyMFoam 求解器最好基于 overInterDyMFoam 进行修改，对于新手不要随意换目录，很多 include 文件搞不清楚很容易找不到。 编译前，记得去 ``source waves2Foam/bin/bashrc``,否则 好多造波的库是找不到的，另外此处 waves2Foam 的造波边界条件似乎和 OF -v1706中的 waveModel 边界条件名称有所冲突，因此可以将自带的 waveModel 库 comment out 掉。
+
+如果你觉得本部分对你的研究有借鉴意义，可以使用如下引用：
+
+	```
+	@article{Maoyanjun2018,
+	title = "CFD simulation of an integration system of Oscillating Buoy WEC with a fxed box-type breakwater",
+	journal = "OpenFOAM Workshop 2018",
+	author = "Yanjun Mao, Yong Cheng,  Gangjun Zhai",
+	keywords = "Wave energy converter;Integrated system;OpenFOAM;Overset mesh;Nonlinear power take-off model"
+	}
+	```
 
 # 杂项
 对于新手，经常会遇到的``命令不存在``的错误提示，思考了一下，大概有一下几种可能参考：

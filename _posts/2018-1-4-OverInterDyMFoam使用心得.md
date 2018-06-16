@@ -21,6 +21,11 @@ overInterDyMFoam是一个非常抗造的求解器，因为重叠网格的效果�
 * 重叠网格和背景网格差异不宜过大
 * 重叠区域的结构物外边界要有足够厚度的网格进行与背景网格的插值和数据交换
 * 容易出现局部插值不准的问题
+
+# post process of the floatingObject with oversetMesh in  paraView 
+
+Since the boundary patches do not update with the overSetMesh,so it is difficult to pick up the floatingObject from the internal meshes. As is known that the oversetMesh has to mark the hole, interpolation, and normal cells with 2 ,1,0. Hence, the Threshold can be used to show the hole cells which means the floatingObject. scalar by cell Types and limit the Minimum and Maximum value of the cellTypes both to 2. this will show the hole cells. further postprocess method will provide later.
+ 
 * $a=xy+x^2$
 
 
