@@ -850,7 +850,7 @@ waveDyMFoam.C
  68 
        //此部分关于调整creatFields.H与readWaveProperties.H 的方法是错误的，编译不会出错，但是在运行是，当注册 U 速度场时需要读取 ``waveProperties`` Dict, 此时readWaveProperties.H 还没有注册，
       //因此会导致没有 waveProperties Dict 的支持。因此需要在 U 注册之前，进行 #include "readWaveProperties.H",且 readWaveProperties.H 需要readGravitationalAcceleration.H 中声明 g.因此争取修改方法如修改后所示代码，将#include "readWaveProperties.H" 也放入到creatFields.H中。
- 69    ~~ #include "createFields.H"  //此部分对代码顺序做了一定的调整，下面三个注释的文件放在了creatFields.H中，因为初始化P=p_rgh+rho*gh，需要调用，因此需要调整顺序，此部分大多数版本的改写中都会遇到此问题。manual中给出的解决方式没理解，似乎即使编译成功也会出现无法运行的问题，在此修改，可以编译成功，但是暂未进行算例验证。
+ 69       #include "createFields.H"  //~~此部分对代码顺序做了一定的调整，下面三个注释的文件放在了creatFields.H中，因为初始化P=p_rgh+rho*gh，需要调用，因此需要调整顺序，此部分大多数版本的改写中都会遇到此问题。manual中给出的解决方式没理解，似乎即使编译成功也会出现无法运行的问题，在此修改，可以编译成功，但是暂未进行算例验证。~~
  70 //    #include "readGravitationalAcceleration.H"
  71 //    #include "readhRef.H"
  72 //    #include "gh.H"
