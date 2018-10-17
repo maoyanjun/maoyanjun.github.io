@@ -924,6 +924,40 @@ createAlphaFluxes.H的定义如下：
 
 相信此部分内容应该属于全网首发，其实没什么新鲜东西，一句话，搞清楚什么是造波边界条件，什么是动网格求解器，两者算法上应该是相互独立的，因此上面 waveDyMFoam solver 的修改流程完全适用于 overWaveDyMFoam solver, 此部分工作已经过验证可以正确应用，需要注意的是相关依赖和include 文件要搞清楚，作者建议 overWaveDyMFoam 求解器最好基于 overInterDyMFoam 进行修改，对于新手不要随意换目录，很多 include 文件搞不清楚很容易找不到。 编译前，记得去 ``source waves2Foam/bin/bashrc``,否则 好多造波的库是找不到的，另外此处 waves2Foam 的造波边界条件似乎和 OF -v1706中的 waveModel 边界条件名称有所冲突，因此可以将自带的 waveModel 库 comment out 掉。
 
+**error 提示**
+
+1.
+
+```
+ 
+	Dictionary entry for patch inlet not found
+	file: /home/mk/OpenFOAM/mk-v1712/run/waveFlume/constant/waveProperties"
+	#这个是去掉自带波浪库的问题
+```
+
+2.
+
+```
+
+	--> FOAM FATAL ERROR: 
+	
+	    request for dictionary waveProperties from objectRegistry region0 failed
+	    available objects of type dictionary are
+	
+	7
+	(
+	MRFProperties
+	turbulenceProperties
+	fvSchemes
+	fvSolution
+	data
+	dynamicMeshDict
+	transportProperties
+	)
+	#这个是因为每把 读取波浪的头文件放到 creatFields 中的问题
+
+```
+
 如果你觉得本部分对你的研究有借鉴意义，可以使用如下引用：
 
 	```
